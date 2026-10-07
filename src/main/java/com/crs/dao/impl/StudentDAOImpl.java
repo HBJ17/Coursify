@@ -58,7 +58,18 @@ public class StudentDAOImpl implements StudentDAO {
 
     @Override
     public List<String> findCompletedCourses(String studentId) {
-        throw new UnsupportedOperationException("TODO Member 1");
+        List<String> codes = new ArrayList<>();
+        try (Connection conn = DBConnectionManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT course_code FROM completed_courses WHERE student_id = ? ORDER BY course_code")) {
+            ps.setString(1, studentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) codes.add(rs.getString("course_code"));
+            }
+            return codes;
+        } catch (SQLException e) {
+            throw new DatabaseOperationException("Could not load completed courses of " + studentId, e);
+        }
     }
 
     // Both SQL statements above use the same parameter order, so one helper runs either.
