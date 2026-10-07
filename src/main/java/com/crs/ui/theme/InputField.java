@@ -38,6 +38,7 @@ public class InputField extends JTextField {
         field.setSelectionColor(Theme.PRIMARY_SOFT_BORDER);
         field.setOpaque(false);
         field.setBorder(new FieldBorder(hasIcon ? 34 : 10));
+        field.setMinimumSize(new java.awt.Dimension(40, 36)); // never squashed by a tight layout
         field.addFocusListener(new FocusAdapter() {
             @Override public void focusGained(FocusEvent e) { field.repaint(); }
             @Override public void focusLost(FocusEvent e) { field.repaint(); }

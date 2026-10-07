@@ -3,6 +3,8 @@ package com.crs.ui.theme;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.BorderFactory;
@@ -12,6 +14,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
 
 /** Gives any JTable the Coursify look: tall rows, light dividers, uppercase header, hover highlight. */
 public final class Tables {
@@ -109,6 +112,33 @@ public final class Tables {
             super.getTableCellRendererComponent(table, value, selected, focused, row, column);
             setFont(Theme.mono(12.5f));
             return this;
+        }
+    }
+
+    /** Shows the value as a small monospaced chip, e.g. a course code. */
+    public static class ChipCell extends JComponent implements TableCellRenderer {
+        private JTable table;
+        private Object value;
+        private int row;
+        private boolean selected;
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean selected,
+                                                       boolean focused, int row, int column) {
+            this.table = table;
+            this.value = value;
+            this.row = row;
+            this.selected = selected;
+            return this;
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = Draw.smooth(g);
+            g2.setColor(rowBackground(table, row, selected));
+            g2.fillRect(0, 0, getWidth(), getHeight());
+            if (value != null) Draw.chip(g2, value.toString(), Theme.monoBold(11.5f), Chip.Style.NEUTRAL, 16, getHeight() / 2);
+            g2.dispose();
         }
     }
 

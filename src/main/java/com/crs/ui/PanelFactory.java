@@ -1,6 +1,7 @@
 package com.crs.ui;
 
 import com.crs.app.AppContext;
+import com.crs.ui.theme.Chip;
 import com.crs.ui.theme.Icons;
 import java.awt.BorderLayout;
 import javax.swing.JPanel;
@@ -33,13 +34,19 @@ public class PanelFactory {
         }
     }
 
-    /** Admin area: sidebar shell with the dashboard. */
+    /** Admin area: sidebar shell with the dashboard and the course catalogue. */
     private JPanel adminScreen() {
         AppShell shell = new AppShell(ctx, session, navigator);
+        AdminDashboardPanel dashboard = new AdminDashboardPanel(ctx);
+        AdminCoursesPanel courses = new AdminCoursesPanel(ctx);
         shell.addSection("Administration");
         shell.addPage("dashboard", "Dashboard", Icons.Name.DASHBOARD,
                 "Dashboard", "Live demand and registrations across the catalogue",
-                new AdminDashboardPanel(ctx));
+                dashboard, dashboard.headerActions());
+        shell.addPage("courses", "Courses", Icons.Name.BOOK,
+                "Courses", "Add or remove courses in the catalogue",
+                courses, courses.headerActions());
+        shell.setCounter("courses", () -> ctx.getCourseService().getAllSorted().size(), Chip.Style.NEUTRAL);
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(shell, BorderLayout.CENTER);
         return panel;
