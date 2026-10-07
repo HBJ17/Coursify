@@ -52,6 +52,21 @@ public class RegisterController extends BaseController {
                 code -> showInfo("Your registration for " + code + " was cancelled."));
     }
 
+    /** Leaves a waitlist; afterSuccess lets the screen reload its table. */
+    public void leaveWaitlist(String courseCode, Runnable afterSuccess) {
+        if (courseCode == null) {
+            showInfo("Please select a waitlist first.");
+            return;
+        }
+        if (!confirm("Leave the waitlist for " + courseCode + "?")) return;
+        String studentId = session.getUserId();
+        runAsync(() -> {
+                    waitlistService.leave(studentId, courseCode);
+                    return courseCode;
+                },
+                code -> afterSuccess.run());
+    }
+
     private void offerWaitlist(String studentId, String courseCode) {
         if (!confirm(courseCode + " is full. Do you want to join the waitlist?")) return;
         runAsync(() -> {
