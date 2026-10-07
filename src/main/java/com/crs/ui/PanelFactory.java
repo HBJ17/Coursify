@@ -27,16 +27,17 @@ public class PanelFactory {
 
     public JPanel create(String screenName) {
         switch (screenName) {
-            case LOGIN:   return placeholder("Login");
-            case STUDENT: return placeholder("Student area");
-            case ADMIN:   return placeholder("Admin dashboard");
+            case LOGIN:   return new LoginPanel(ctx.getAuthService(), session, navigator);
+            case STUDENT: return new StudentHomePanel(ctx, session, navigator);
+            case ADMIN:   return adminPlaceholder();
             default: throw new IllegalArgumentException("Unknown screen: " + screenName);
         }
     }
 
-    private JPanel placeholder(String text) {
+    private JPanel adminPlaceholder() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(new JLabel(text, SwingConstants.CENTER));
+        panel.add(new HeaderBar(session, navigator), BorderLayout.NORTH);
+        panel.add(new JLabel("Admin dashboard (coming soon)", SwingConstants.CENTER), BorderLayout.CENTER);
         return panel;
     }
 }
