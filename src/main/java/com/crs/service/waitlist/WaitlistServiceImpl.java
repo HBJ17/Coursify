@@ -77,7 +77,28 @@ public class WaitlistServiceImpl implements WaitlistService {
         waitlistDAO.remove(studentId, courseCode);
     }
     @Override public Optional<WaitlistEntry> promoteNext(String courseCode) { throw new UnsupportedOperationException("TODO Member 3"); }
-    @Override public int positionOf(String studentId, String courseCode) { throw new UnsupportedOperationException("TODO Member 3"); }
-    @Override public List<WaitlistEntry> getWaitlist(String courseCode) { throw new UnsupportedOperationException("TODO Member 3"); }
-    @Override public List<WaitlistEntry> getMyWaitlists(String studentId) { throw new UnsupportedOperationException("TODO Member 3"); }
+    @Override public int positionOf(String studentId, String courseCode) {
+        List<WaitlistEntry> list = getWaitlist(courseCode);
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).getStudentId().equals(studentId)) {
+                return i + 1;
+            }
+        }
+        return -1;
+    }
+
+    @Override public List<WaitlistEntry> getWaitlist(String courseCode) {
+        PriorityQueue<WaitlistEntry> q = queues.get(courseCode);
+        if (q == null) return List.of();
+        List<WaitlistEntry> list = new java.util.ArrayList<>(q);
+        list.sort(priority);
+        return list;
+    }
+
+    @Override public List<WaitlistEntry> getMyWaitlists(String studentId) {
+        return queues.values().stream()
+                .flatMap(PriorityQueue::stream)
+                .filter(e -> e.getStudentId().equals(studentId))
+                .toList();
+    }
 }
