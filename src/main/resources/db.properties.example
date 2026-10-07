@@ -1,0 +1,6 @@
+# Copy this file to db.properties (same folder) and fill in your own Oracle details.
+# db.properties is in .gitignore, so your password never goes to GitHub.
+# Oracle XE 21c service name: XEPDB1     Oracle Database 23ai Free: FREEPDB1
+db.url=jdbc:oracle:thin:@localhost:1521/XEPDB1
+db.user=crs
+db.password=crs

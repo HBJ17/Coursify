@@ -1,0 +1,6 @@
+# Same line endings on every machine, so Windows/Mac/Linux teammates never get whole-file diffs.
+* text=auto eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
