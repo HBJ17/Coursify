@@ -14,7 +14,7 @@ public class StudentHomePanel extends JPanel {
         super(new BorderLayout());
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("Browse Courses", new BrowseCoursesPanel(ctx, session));
-        tabs.addTab("My Courses", comingSoon("My Courses"));
+        tabs.addTab("My Courses", new MyCoursesPanel(ctx, session));
         tabs.addTab("My Waitlists", comingSoon("My Waitlists"));
 
         add(new HeaderBar(session, navigator), BorderLayout.NORTH);

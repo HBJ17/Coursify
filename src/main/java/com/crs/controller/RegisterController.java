@@ -37,6 +37,21 @@ public class RegisterController extends BaseController {
                 });
     }
 
+    /** Cancels after a confirmation. The service then promotes the next waitlisted student automatically. */
+    public void cancel(String courseCode) {
+        if (courseCode == null) {
+            showInfo("Please select a course first.");
+            return;
+        }
+        if (!confirm("Cancel your registration for " + courseCode + "?")) return;
+        String studentId = session.getUserId();
+        runAsync(() -> {
+                    registrationService.cancel(studentId, courseCode);
+                    return courseCode;
+                },
+                code -> showInfo("Your registration for " + code + " was cancelled."));
+    }
+
     private void offerWaitlist(String studentId, String courseCode) {
         if (!confirm(courseCode + " is full. Do you want to join the waitlist?")) return;
         runAsync(() -> {
