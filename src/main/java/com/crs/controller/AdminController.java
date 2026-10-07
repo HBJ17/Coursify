@@ -1,14 +1,11 @@
 package com.crs.controller;
 
-import com.crs.model.Course;
 import com.crs.service.CourseService;
 import com.crs.ui.AddCourseDialog;
+import com.crs.ui.theme.MessageDialog.Tone;
 import java.awt.Component;
-import java.util.List;
-import javax.swing.JComboBox;
-import javax.swing.JOptionPane;
 
-/** Admin-only actions: add and remove courses. afterChange lets the dashboard reload. */
+/** Admin-only actions: add and remove courses. afterChange lets the screen reload. */
 public class AdminController extends BaseController {
     private final CourseService courseService;
 
@@ -29,25 +26,15 @@ public class AdminController extends BaseController {
                         }));
     }
 
-    /** Loads the course list in the background, lets the admin pick one, then removes it. */
-    public void removeCourse(Runnable afterChange) {
-        runAsync(courseService::getAllSorted, courses -> pickAndRemove(courses, afterChange));
-    }
-
-    private void pickAndRemove(List<Course> courses, Runnable afterChange) {
-        if (courses.isEmpty()) {
-            showInfo("There are no courses to remove.");
+    /** Removes the given course after a confirmation. code is null when nothing is selected. */
+    public void removeCourse(String code, Runnable afterChange) {
+        if (code == null) {
+            showHint("Select a course in the table first.");
             return;
         }
-        JComboBox<String> picker = new JComboBox<>();
-        for (Course c : courses) picker.addItem(c.getCode() + " - " + c.getTitle());
-
-        int choice = JOptionPane.showConfirmDialog(parent, picker, "Remove which course?",
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-        if (choice != JOptionPane.OK_OPTION) return;
-
-        String code = courses.get(picker.getSelectedIndex()).getCode();
-        if (!confirm("Remove " + code + "? Its registrations and waitlist entries are removed too.")) return;
+        if (!confirm(Tone.DANGER, "Remove " + code + "?",
+                "The course, its registrations and its waitlist entries will be deleted.",
+                "Remove course", "Cancel")) return;
         runAsync(() -> {
                     courseService.removeCourse(code);
                     return code;

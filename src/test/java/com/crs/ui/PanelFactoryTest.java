@@ -90,8 +90,11 @@ class PanelFactoryTest {
     @Test
     void logoutButtonReturnsToLogin() throws Exception {
         session.login(ctx.getAuthService().login("S001", "pass"));
-        HeaderBar header = find(factory.create(PanelFactory.STUDENT), HeaderBar.class).get(0);
-        find(header, javax.swing.JButton.class).get(0).doClick();
+        JPanel screen = factory.create(PanelFactory.STUDENT);
+        find(screen, javax.swing.JButton.class).stream()
+                .filter(b -> "Log out".equals(b.getText()))
+                .findFirst().orElseThrow()
+                .doClick();
 
         assertFalse(session.isLoggedIn());
         assertEquals(List.of(PanelFactory.LOGIN), shownScreens);

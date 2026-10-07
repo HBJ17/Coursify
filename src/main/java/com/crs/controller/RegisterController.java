@@ -4,11 +4,12 @@ import com.crs.exception.CourseFullException;
 import com.crs.service.RegistrationService;
 import com.crs.service.WaitlistService;
 import com.crs.ui.Session;
+import com.crs.ui.theme.MessageDialog.Tone;
 import java.awt.Component;
 
 /**
  * Handles the student's course actions. Every call runs in the background (see BaseController).
- * Clash, prerequisite and duplicate errors are shown as messages. A full course offers the waitlist instead.
+ * Clash, prerequisite and duplicate errors are shown as dialogs. A full course offers the waitlist instead.
  */
 public class RegisterController extends BaseController {
     private final RegistrationService registrationService;
@@ -25,12 +26,12 @@ public class RegisterController extends BaseController {
 
     public void register(String courseCode) {
         if (courseCode == null) {
-            showInfo("Please select a course first.");
+            showHint("Please select a course first.");
             return;
         }
         String studentId = session.getUserId();
         runAsync(() -> registrationService.register(studentId, courseCode),
-                registration -> showInfo("You are registered for " + courseCode + "."),
+                registration -> showSuccess("Registered for " + courseCode, "Added to your schedule"),
                 error -> {
                     if (error instanceof CourseFullException) offerWaitlist(studentId, courseCode);
                     else showError(error);
@@ -40,40 +41,51 @@ public class RegisterController extends BaseController {
     /** Cancels after a confirmation. The service then promotes the next waitlisted student automatically. */
     public void cancel(String courseCode) {
         if (courseCode == null) {
-            showInfo("Please select a course first.");
+            showHint("Please select a course first.");
             return;
         }
-        if (!confirm("Cancel your registration for " + courseCode + "?")) return;
+        if (!confirm(Tone.DANGER, "Cancel registration?",
+                "Cancel your registration for " + courseCode + "? The next student on the waitlist will get your seat.",
+                "Cancel registration", "Keep it")) return;
         String studentId = session.getUserId();
         runAsync(() -> {
                     registrationService.cancel(studentId, courseCode);
                     return courseCode;
                 },
-                code -> showInfo("Your registration for " + code + " was cancelled."));
+                code -> showSuccess("Registration for " + code + " cancelled", "Your seat was released"));
     }
 
-    /** Leaves a waitlist; afterSuccess lets the screen reload its table. */
+    /** Leaves a waitlist; afterSuccess lets the screen reload its list. */
     public void leaveWaitlist(String courseCode, Runnable afterSuccess) {
         if (courseCode == null) {
-            showInfo("Please select a waitlist first.");
+            showHint("Please select a waitlist first.");
             return;
         }
-        if (!confirm("Leave the waitlist for " + courseCode + "?")) return;
+        if (!confirm(Tone.WARNING, "Leave waitlist?",
+                "You'll lose your place in the queue for " + courseCode + ".", "Leave waitlist", "Stay")) return;
         String studentId = session.getUserId();
         runAsync(() -> {
                     waitlistService.leave(studentId, courseCode);
                     return courseCode;
                 },
-                code -> afterSuccess.run());
+                code -> {
+                    showSuccess("Left the waitlist for " + code, null);
+                    afterSuccess.run();
+                });
     }
 
+    /** Looks up where the student would be in the queue, then asks whether to join. */
     private void offerWaitlist(String studentId, String courseCode) {
-        if (!confirm(courseCode + " is full. Do you want to join the waitlist?")) return;
-        runAsync(() -> {
-                    waitlistService.join(studentId, courseCode);
-                    return waitlistService.positionOf(studentId, courseCode);
-                },
-                position -> showInfo("You joined the waitlist for " + courseCode
-                        + ". Your position: " + position + "."));
+        runAsync(() -> waitlistService.getWaitlist(courseCode).size() + 1, position -> {
+            if (!confirm(Tone.PRIMARY, courseCode + " is full",
+                    "Join the waitlist? You'd be position #" + position
+                            + ". When a seat frees up, #1 is registered automatically.",
+                    "Join waitlist", "Not now")) return;
+            runAsync(() -> {
+                        waitlistService.join(studentId, courseCode);
+                        return waitlistService.positionOf(studentId, courseCode);
+                    },
+                    joined -> showSuccess("Joined the waitlist for " + courseCode, "You're #" + joined + " in line"));
+        });
     }
 }

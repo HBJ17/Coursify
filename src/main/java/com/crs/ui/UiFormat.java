@@ -10,8 +10,12 @@ public final class UiFormat {
 
     private UiFormat() { }
 
+    /** e.g. "Mon 09:00–10:00", or "-" when the course has no fixed slot. */
     public static String timeSlot(Course c) {
-        return c.getTimeSlot() == null ? "-" : c.getTimeSlot().toString();
+        if (c.getTimeSlot() == null) return "-";
+        String day = c.getTimeSlot().getDay().toString();
+        return day.charAt(0) + day.substring(1, 3).toLowerCase() + " "
+                + c.getTimeSlot().getStart() + "–" + c.getTimeSlot().getEnd();
     }
 
     public static String seats(Course c) {
