@@ -76,7 +76,27 @@ public class WaitlistServiceImpl implements WaitlistService {
         }
         waitlistDAO.remove(studentId, courseCode);
     }
-    @Override public Optional<WaitlistEntry> promoteNext(String courseCode) { throw new UnsupportedOperationException("TODO Member 3"); }
+    @Override public Optional<WaitlistEntry> promoteNext(String courseCode) {
+        Course course = courseDAO.findByCode(courseCode).orElse(null);
+        if (course == null || course.getSeatsLeft() <= 0) {
+            return Optional.empty();
+        }
+
+        PriorityQueue<WaitlistEntry> q = queues.get(courseCode);
+        if (q == null || q.isEmpty()) {
+            return Optional.empty();
+        }
+
+        WaitlistEntry next = q.poll();
+        waitlistDAO.remove(next.getStudentId(), courseCode);
+        
+        registrationDAO.registerAtomic(new com.crs.model.Registration(next.getStudentId(), courseCode));
+        
+        subject.publish(new com.crs.observer.RegistrationEvent(
+                com.crs.observer.RegistrationEvent.Type.PROMOTED, next.getStudentId(), courseCode));
+                
+        return Optional.of(next);
+    }
     @Override public int positionOf(String studentId, String courseCode) {
         List<WaitlistEntry> list = getWaitlist(courseCode);
         for (int i = 0; i < list.size(); i++) {
