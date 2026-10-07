@@ -78,7 +78,17 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     @Override
     public void cancel(String studentId, String courseCode) {
-        throw new UnsupportedOperationException("TODO Member 2");
+        boolean hasActive = registrationDAO.findActiveByStudent(studentId).stream()
+                .anyMatch(r -> r.getCourseCode().equals(courseCode));
+        if (!hasActive) {
+            throw new IllegalArgumentException("No active registration found for student " + studentId + " in course " + courseCode);
+        }
+
+        registrationDAO.cancelAtomic(studentId, courseCode);
+        subject.publish(new RegistrationEvent(RegistrationEvent.Type.CANCELLED, studentId, courseCode));
+        if (waitlistService != null) {
+            waitlistService.promoteNext(courseCode);
+        }
     }
 
     @Override
