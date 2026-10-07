@@ -58,9 +58,94 @@ public class CourseDAOImpl implements CourseDAO {
         }
     }
 
-    @Override public void save(Course course) { throw new UnsupportedOperationException("TODO Member 1"); }
-    @Override public void update(Course course) { throw new UnsupportedOperationException("TODO Member 1"); }
-    @Override public void delete(String courseCode) { throw new UnsupportedOperationException("TODO Member 1"); }
+    /** Inserts the course row and its prerequisite rows in ONE transaction. */
+    @Override
+    public void save(Course course) {
+        String sql = "INSERT INTO courses (title, credits, capacity, seats_left, waitlist_cap, "
+                + "class_day, start_time, end_time, course_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        inTransaction("Could not save course " + course.getCode(), conn -> {
+            writeCourseRow(conn, sql, course);
+            insertPrerequisites(conn, course);
+        });
+    }
+
+    /** Updates the course row and replaces its prerequisite rows in ONE transaction. */
+    @Override
+    public void update(Course course) {
+        String sql = "UPDATE courses SET title = ?, credits = ?, capacity = ?, seats_left = ?, waitlist_cap = ?, "
+                + "class_day = ?, start_time = ?, end_time = ? WHERE course_code = ?";
+        inTransaction("Could not update course " + course.getCode(), conn -> {
+            if (writeCourseRow(conn, sql, course) == 0) {
+                throw new SQLException("No such course: " + course.getCode());
+            }
+            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM prerequisites WHERE course_code = ?")) {
+                ps.setString(1, course.getCode());
+                ps.executeUpdate();
+            }
+            insertPrerequisites(conn, course);
+        });
+    }
+
+    /** Deletes the course. Its prerequisite, registration and waitlist rows go with it (ON DELETE CASCADE). */
+    @Override
+    public void delete(String courseCode) {
+        inTransaction("Could not delete course " + courseCode, conn -> {
+            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM courses WHERE course_code = ?")) {
+                ps.setString(1, courseCode);
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    /** A piece of JDBC work that runs on one connection and may throw SQLException. */
+    private interface SqlWork {
+        void run(Connection conn) throws SQLException;
+    }
+
+    /** Runs the work with auto-commit off: commit if it succeeds, rollback if anything fails. */
+    private void inTransaction(String errorMessage, SqlWork work) {
+        try (Connection conn = DBConnectionManager.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                work.run(conn);
+                conn.commit();
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
+        } catch (SQLException e) {
+            throw new DatabaseOperationException(errorMessage + ": " + e.getMessage(), e);
+        }
+    }
+
+    /** Runs an INSERT or UPDATE whose 9 parameters are in the order used by save() and update(). */
+    private int writeCourseRow(Connection conn, String sql, Course c) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, c.getTitle());
+            ps.setInt(2, c.getCredits());
+            ps.setInt(3, c.getCapacity());
+            ps.setInt(4, c.getSeatsLeft());
+            ps.setInt(5, c.getWaitlistCap());
+            TimeSlot slot = c.getTimeSlot();
+            ps.setString(6, slot == null ? null : slot.getDay().name());
+            ps.setString(7, slot == null ? null : slot.getStart().toString());
+            ps.setString(8, slot == null ? null : slot.getEnd().toString());
+            ps.setString(9, c.getCode());
+            return ps.executeUpdate();
+        }
+    }
+
+    private void insertPrerequisites(Connection conn, Course c) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO prerequisites (course_code, prereq_code) VALUES (?, ?)")) {
+            for (String prereq : c.getPrerequisites()) {
+                ps.setString(1, c.getCode());
+                ps.setString(2, prereq);
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
 
     /** Adjacency list: course code -> codes of its prerequisites. Every course is a key, even with no prerequisites. */
     @Override
