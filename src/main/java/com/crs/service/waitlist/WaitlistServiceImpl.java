@@ -9,7 +9,12 @@ import com.crs.observer.RegistrationSubject;
 import com.crs.service.WaitlistService;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.PriorityQueue;
 import java.util.Optional;
+import com.crs.model.Student;
+import com.crs.model.Course;
 
 /** STUB. Member 3 replaces the method bodies (keep the constructor signature). One PriorityQueue per course. */
 public class WaitlistServiceImpl implements WaitlistService {
@@ -19,6 +24,7 @@ public class WaitlistServiceImpl implements WaitlistService {
     private final RegistrationDAO registrationDAO;
     private final RegistrationSubject subject;
     private final Comparator<WaitlistEntry> priority;
+    private final Map<String, PriorityQueue<WaitlistEntry>> queues = new HashMap<>();
 
     public WaitlistServiceImpl(WaitlistDAO waitlistDAO, StudentDAO studentDAO, CourseDAO courseDAO,
                                RegistrationDAO registrationDAO, RegistrationSubject subject,
@@ -29,12 +35,90 @@ public class WaitlistServiceImpl implements WaitlistService {
         this.registrationDAO = registrationDAO;
         this.subject = subject;
         this.priority = priority;
+
+        for (WaitlistEntry entry : waitlistDAO.findAll()) {
+            queues.computeIfAbsent(entry.getCourseCode(), k -> new PriorityQueue<>(priority))
+                  .add(entry);
+        }
     }
 
-    @Override public void join(String studentId, String courseCode) { throw new UnsupportedOperationException("TODO Member 3"); }
-    @Override public void leave(String studentId, String courseCode) { throw new UnsupportedOperationException("TODO Member 3"); }
-    @Override public Optional<WaitlistEntry> promoteNext(String courseCode) { throw new UnsupportedOperationException("TODO Member 3"); }
-    @Override public int positionOf(String studentId, String courseCode) { throw new UnsupportedOperationException("TODO Member 3"); }
-    @Override public List<WaitlistEntry> getWaitlist(String courseCode) { throw new UnsupportedOperationException("TODO Member 3"); }
-    @Override public List<WaitlistEntry> getMyWaitlists(String studentId) { throw new UnsupportedOperationException("TODO Member 3"); }
+    @Override public void join(String studentId, String courseCode) {
+        Student student = studentDAO.findById(studentId).orElseThrow(() -> new IllegalStateException("Student not found"));
+        Course course = courseDAO.findByCode(courseCode).orElseThrow(() -> new IllegalStateException("Course not found"));
+
+        if (!course.isFull()) throw new IllegalStateException("Course is not full");
+
+        boolean alreadyRegistered = registrationDAO.findActiveByStudent(studentId).stream()
+                .anyMatch(r -> r.getCourseCode().equals(courseCode));
+        if (alreadyRegistered) throw new IllegalStateException("Already registered");
+
+        PriorityQueue<WaitlistEntry> q = queues.computeIfAbsent(courseCode, k -> new PriorityQueue<>(priority));
+        if (q.stream().anyMatch(e -> e.getStudentId().equals(studentId))) {
+            throw new IllegalStateException("Already on waitlist");
+        }
+
+        if (q.size() >= course.getWaitlistCap()) {
+            throw new IllegalStateException("Waitlist is full");
+        }
+
+        WaitlistEntry entry = new WaitlistEntry(studentId, courseCode, student.getCgpa());
+        waitlistDAO.add(entry);
+        q.add(entry);
+
+        subject.publish(new com.crs.observer.RegistrationEvent(
+                com.crs.observer.RegistrationEvent.Type.WAITLISTED, studentId, courseCode));
+    }
+    
+    @Override public void leave(String studentId, String courseCode) {
+        PriorityQueue<WaitlistEntry> q = queues.get(courseCode);
+        if (q != null) {
+            q.removeIf(e -> e.getStudentId().equals(studentId));
+        }
+        waitlistDAO.remove(studentId, courseCode);
+    }
+    @Override public Optional<WaitlistEntry> promoteNext(String courseCode) {
+        Course course = courseDAO.findByCode(courseCode).orElse(null);
+        if (course == null || course.getSeatsLeft() <= 0) {
+            return Optional.empty();
+        }
+
+        PriorityQueue<WaitlistEntry> q = queues.get(courseCode);
+        if (q == null || q.isEmpty()) {
+            return Optional.empty();
+        }
+
+        WaitlistEntry next = q.poll();
+        waitlistDAO.remove(next.getStudentId(), courseCode);
+        
+        registrationDAO.registerAtomic(new com.crs.model.Registration(next.getStudentId(), courseCode));
+        
+        subject.publish(new com.crs.observer.RegistrationEvent(
+                com.crs.observer.RegistrationEvent.Type.PROMOTED, next.getStudentId(), courseCode));
+                
+        return Optional.of(next);
+    }
+    @Override public int positionOf(String studentId, String courseCode) {
+        List<WaitlistEntry> list = getWaitlist(courseCode);
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).getStudentId().equals(studentId)) {
+                return i + 1;
+            }
+        }
+        return -1;
+    }
+
+    @Override public List<WaitlistEntry> getWaitlist(String courseCode) {
+        PriorityQueue<WaitlistEntry> q = queues.get(courseCode);
+        if (q == null) return List.of();
+        List<WaitlistEntry> list = new java.util.ArrayList<>(q);
+        list.sort(priority);
+        return list;
+    }
+
+    @Override public List<WaitlistEntry> getMyWaitlists(String studentId) {
+        return queues.values().stream()
+                .flatMap(PriorityQueue::stream)
+                .filter(e -> e.getStudentId().equals(studentId))
+                .toList();
+    }
 }
