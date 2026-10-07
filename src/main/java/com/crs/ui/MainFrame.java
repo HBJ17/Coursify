@@ -1,20 +1,60 @@
 package com.crs.ui;
 
 import com.crs.app.AppContext;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.SwingConstants;
+import javax.swing.JPanel;
 
-/** STUB. Member 4 builds the real window here (keep the constructor signature). JFrame + CardLayout. */
-public class MainFrame extends JFrame {
+/**
+ * The one and only window. A CardLayout holds the current screen (login, student area or admin area)
+ * and showScreen(...) swaps it. A screen is rebuilt every time it is shown, so it always starts with fresh data.
+ */
+public class MainFrame extends JFrame implements ScreenNavigator {
     private final AppContext ctx;
+    private final Session session = new Session();
+    private final CardLayout cards = new CardLayout();
+    private final JPanel cardHolder = new JPanel(cards);
+    private final PanelFactory factory;
+    private JPanel currentScreen;
 
     public MainFrame(AppContext ctx) {
         super("Course Registration System");
         this.ctx = ctx;
-        add(new JLabel("UI coming soon (Member 4)", SwingConstants.CENTER));
-        setSize(900, 600);
-        setLocationRelativeTo(null);
+        this.factory = new PanelFactory(ctx, session, this);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setMinimumSize(new Dimension(900, 600));
+        add(cardHolder, BorderLayout.CENTER);
+        showScreen(PanelFactory.LOGIN);
+        pack();
+        setLocationRelativeTo(null);
     }
+
+    /** Removes the old screen, builds the requested one and makes it visible. */
+    @Override
+    public void showScreen(String screenName) {
+        if (currentScreen != null) {
+            detachListeners(currentScreen); // old screen must stop listening for events
+            cardHolder.remove(currentScreen);
+        }
+        currentScreen = factory.create(screenName);
+        cardHolder.add(currentScreen, screenName);
+        cards.show(cardHolder, screenName);
+        cardHolder.revalidate();
+        cardHolder.repaint();
+    }
+
+    /** Walks through every child component and unsubscribes the live panels. */
+    private static void detachListeners(Container container) {
+        for (Component child : container.getComponents()) {
+            if (child instanceof RefreshablePanel<?> panel) panel.detach();
+            if (child instanceof Container inner) detachListeners(inner);
+        }
+    }
+
+    public AppContext getContext() { return ctx; }
+    public Session getSession() { return session; }
 }

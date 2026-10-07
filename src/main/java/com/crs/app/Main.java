@@ -1,38 +1,34 @@
 package com.crs.app;
 
-import com.crs.exception.RegistrationException;
-import com.crs.model.Person;
+import com.crs.ui.MainFrame;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 /**
- * Starting point. Right now it runs a small console demo to prove the skeleton works.
- * Member 4 will replace the demo with: SwingUtilities.invokeLater(() -> new MainFrame(ctx).setVisible(true));
+ * Starting point. Opens the Swing window on the Event Dispatch Thread.
+ * AppContext.createDefault() uses Oracle when src/main/resources/db.properties exists, otherwise the fakes.
+ * Run with --console for the old text demo.
  */
 public class Main {
     public static void main(String[] args) throws Exception {
-        AppContext ctx = AppContext.createWithFakes();
-
-        ctx.getSubject().addListener(e -> System.out.println("  [event] " + e));
-
-        Person p = ctx.getAuthService().login("S001", "pass");
-        System.out.println("Logged in: " + p);
-
-        System.out.println("\nAll courses:");
-        ctx.getCourseService().getAllSorted().forEach(c -> System.out.println("  " + c));
-
-        System.out.println("\nRegistering S001 for CS202 (only 1 seat):");
-        ctx.getRegistrationService().register("S001", "CS202");
-
-        System.out.println("\nS002 tries CS202 too:");
-        try {
-            ctx.getRegistrationService().register("S002", "CS202");
-        } catch (RegistrationException e) {
-            System.out.println("  Error shown to user: " + e.getMessage());
-            ctx.getWaitlistService().join("S002", "CS202");
-            System.out.println("  S002 waitlist position: " + ctx.getWaitlistService().positionOf("S002", "CS202"));
+        if (args.length > 0 && args[0].equals("--console")) {
+            ConsoleDemo.main(args);
+            return;
         }
-
-        System.out.println("\nMy courses (S001): " + ctx.getRegistrationService().getMyCourses("S001"));
-        System.out.println("\nTop courses by demand:");
-        ctx.getAnalyticsService().topInDemand(3).forEach(d -> System.out.println("  " + d));
+        SwingUtilities.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception ignored) {
+                // the default Swing look is fine too
+            }
+            try {
+                new MainFrame(AppContext.createDefault()).setVisible(true);
+            } catch (RuntimeException e) {
+                JOptionPane.showMessageDialog(null, "Could not start: " + e.getMessage(),
+                        "Course Registration System", JOptionPane.ERROR_MESSAGE);
+                System.exit(1);
+            }
+        });
     }
 }
