@@ -3,12 +3,14 @@ package com.crs.dao.impl;
 import com.crs.dao.RegistrationDAO;
 import com.crs.exception.DatabaseOperationException;
 import com.crs.model.Registration;
+import com.crs.model.RegistrationStatus;
 import com.crs.util.DBConnectionManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -93,7 +95,39 @@ public class RegistrationDAOImpl implements RegistrationDAO {
         }
     }
 
-    @Override public List<Registration> findActiveByStudent(String studentId) { throw new UnsupportedOperationException("TODO Member 1"); }
-    @Override public List<Registration> findActiveByCourse(String courseCode) { throw new UnsupportedOperationException("TODO Member 1"); }
-    @Override public List<Registration> findAllActive() { throw new UnsupportedOperationException("TODO Member 1"); }
+    @Override
+    public List<Registration> findActiveByStudent(String studentId) {
+        return queryActive("WHERE status = 'ACTIVE' AND student_id = ?", studentId);
+    }
+
+    @Override
+    public List<Registration> findActiveByCourse(String courseCode) {
+        return queryActive("WHERE status = 'ACTIVE' AND course_code = ?", courseCode);
+    }
+
+    @Override
+    public List<Registration> findAllActive() {
+        return queryActive("WHERE status = 'ACTIVE'", null);
+    }
+
+    /** Runs the SELECT with the given WHERE part. "param" is the one ? value, or null when there is none. */
+    private List<Registration> queryActive(String where, String param) {
+        String sql = "SELECT reg_id, student_id, course_code, status, reg_time FROM registrations "
+                + where + " ORDER BY reg_id";
+        List<Registration> list = new ArrayList<>();
+        try (Connection conn = DBConnectionManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (param != null) ps.setString(1, param);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new Registration(rs.getInt("reg_id"), rs.getString("student_id"),
+                            rs.getString("course_code"), RegistrationStatus.valueOf(rs.getString("status")),
+                            rs.getTimestamp("reg_time").toLocalDateTime()));
+                }
+            }
+            return list;
+        } catch (SQLException e) {
+            throw new DatabaseOperationException("Could not load registrations: " + e.getMessage(), e);
+        }
+    }
 }
