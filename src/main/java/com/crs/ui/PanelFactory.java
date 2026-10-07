@@ -2,9 +2,7 @@ package com.crs.ui;
 
 import com.crs.app.AppContext;
 import java.awt.BorderLayout;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 
 /**
  * Factory pattern: the only place that knows which JPanel class belongs to which screen name.
@@ -29,15 +27,16 @@ public class PanelFactory {
         switch (screenName) {
             case LOGIN:   return new LoginPanel(ctx.getAuthService(), session, navigator);
             case STUDENT: return new StudentHomePanel(ctx, session, navigator);
-            case ADMIN:   return adminPlaceholder();
+            case ADMIN:   return adminScreen();
             default: throw new IllegalArgumentException("Unknown screen: " + screenName);
         }
     }
 
-    private JPanel adminPlaceholder() {
+    /** Admin area: header + dashboard. */
+    private JPanel adminScreen() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(new HeaderBar(session, navigator), BorderLayout.NORTH);
-        panel.add(new JLabel("Admin dashboard (coming soon)", SwingConstants.CENTER), BorderLayout.CENTER);
+        panel.add(new AdminDashboardPanel(ctx), BorderLayout.CENTER);
         return panel;
     }
 }
