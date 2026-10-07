@@ -5,9 +5,7 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 
 /**
  * The one and only window. A CardLayout holds the current screen (login, student area or admin area)
@@ -18,15 +16,17 @@ public class MainFrame extends JFrame implements ScreenNavigator {
     private final Session session = new Session();
     private final CardLayout cards = new CardLayout();
     private final JPanel cardHolder = new JPanel(cards);
+    private final PanelFactory factory;
     private JPanel currentScreen;
 
     public MainFrame(AppContext ctx) {
         super("Course Registration System");
         this.ctx = ctx;
+        this.factory = new PanelFactory(ctx, session, this);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(900, 600));
         add(cardHolder, BorderLayout.CENTER);
-        showScreen("LOGIN");
+        showScreen(PanelFactory.LOGIN);
         pack();
         setLocationRelativeTo(null);
     }
@@ -35,17 +35,11 @@ public class MainFrame extends JFrame implements ScreenNavigator {
     @Override
     public void showScreen(String screenName) {
         if (currentScreen != null) cardHolder.remove(currentScreen);
-        currentScreen = buildScreen(screenName);
+        currentScreen = factory.create(screenName);
         cardHolder.add(currentScreen, screenName);
         cards.show(cardHolder, screenName);
         cardHolder.revalidate();
         cardHolder.repaint();
-    }
-
-    private JPanel buildScreen(String screenName) {
-        JPanel placeholder = new JPanel(new BorderLayout());
-        placeholder.add(new JLabel(screenName + " screen", SwingConstants.CENTER));
-        return placeholder;
     }
 
     public AppContext getContext() { return ctx; }
