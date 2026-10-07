@@ -1,9 +1,9 @@
 package com.crs.app;
 
 import com.crs.ui.MainFrame;
+import com.crs.ui.theme.Theme;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 
 /**
  * Starting point. Opens the Swing window on the Event Dispatch Thread.
@@ -17,16 +17,12 @@ public class Main {
             return;
         }
         SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {
-                // the default Swing look is fine too
-            }
+            Theme.install(); // Coursify fonts, colours and scrollbars
             try {
                 new MainFrame(AppContext.createDefault()).setVisible(true);
             } catch (RuntimeException e) {
                 JOptionPane.showMessageDialog(null, "Could not start: " + e.getMessage(),
-                        "Course Registration System", JOptionPane.ERROR_MESSAGE);
+                        "Coursify", JOptionPane.ERROR_MESSAGE);
                 System.exit(1);
             }
         });

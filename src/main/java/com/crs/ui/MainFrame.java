@@ -1,6 +1,7 @@
 package com.crs.ui;
 
 import com.crs.app.AppContext;
+import com.crs.ui.theme.Theme;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Component;
@@ -22,14 +23,15 @@ public class MainFrame extends JFrame implements ScreenNavigator {
     private JPanel currentScreen;
 
     public MainFrame(AppContext ctx) {
-        super("Course Registration System");
+        super("Coursify — Course Registration");
         this.ctx = ctx;
         this.factory = new PanelFactory(ctx, session, this);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setMinimumSize(new Dimension(900, 600));
+        setMinimumSize(new Dimension(1100, 680));
+        cardHolder.setBackground(Theme.BG);
         add(cardHolder, BorderLayout.CENTER);
         showScreen(PanelFactory.LOGIN);
-        pack();
+        setSize(1280, 800);
         setLocationRelativeTo(null);
     }
 
