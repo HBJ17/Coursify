@@ -1,6 +1,7 @@
 package com.crs.ui;
 
 import com.crs.app.AppContext;
+import com.crs.controller.AdminController;
 import com.crs.model.CourseDemand;
 import com.crs.model.Registration;
 import com.crs.service.AnalyticsService;
@@ -19,6 +20,7 @@ import javax.swing.JTable;
 /**
  * Admin screen. Top: the most in-demand courses (ranked by the analytics max-heap).
  * Bottom: every active registration. Both refresh automatically on every registration event.
+ * The toolbar lets the admin add and remove courses.
  */
 public class AdminDashboardPanel extends RefreshablePanel<AdminDashboardPanel.Data> {
     static final int TOP_K = 5;
@@ -32,15 +34,22 @@ public class AdminDashboardPanel extends RefreshablePanel<AdminDashboardPanel.Da
             "Rank", "Code", "Title", "Capacity", "Registered", "Waitlisted", "Demand");
     private final ReadOnlyTableModel registrationModel = new ReadOnlyTableModel(
             "Reg ID", "Student", "Course", "Registered at");
-    protected final JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    private final JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
     public AdminDashboardPanel(AppContext ctx) {
         super(ctx.getSubject());
         this.analyticsService = ctx.getAnalyticsService();
         this.registrationService = ctx.getRegistrationService();
 
+        AdminController controller = new AdminController(this, ctx.getCourseService());
+        JButton addButton = new JButton("Add course");
+        addButton.addActionListener(e -> controller.addCourse(this::reload));
+        JButton removeButton = new JButton("Remove course");
+        removeButton.addActionListener(e -> controller.removeCourse(this::reload));
         JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> reload());
+        toolbar.add(addButton);
+        toolbar.add(removeButton);
         toolbar.add(refreshButton);
 
         JScrollPane demandPane = new JScrollPane(new JTable(demandModel));
