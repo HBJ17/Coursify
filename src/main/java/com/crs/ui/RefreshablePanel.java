@@ -3,9 +3,11 @@ package com.crs.ui;
 import com.crs.observer.RegistrationEvent;
 import com.crs.observer.RegistrationListener;
 import com.crs.observer.RegistrationSubject;
+import com.crs.ui.theme.Theme;
 import java.awt.BorderLayout;
 import java.util.concurrent.ExecutionException;
 import javax.swing.BorderFactory;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -18,16 +20,27 @@ import javax.swing.SwingWorker;
  *
  * @param <T> the type of data this panel shows, e.g. List&lt;Course&gt;
  */
-public abstract class RefreshablePanel<T> extends JPanel implements RegistrationListener {
+public abstract class RefreshablePanel<T> extends JPanel implements RegistrationListener, LiveComponent {
     private final RegistrationSubject subject;
     protected final JLabel statusLabel = new JLabel(" ");
+    private final JPanel footer = new JPanel(new BorderLayout(0, 8));
 
     protected RefreshablePanel(RegistrationSubject subject) {
-        super(new BorderLayout(8, 8));
+        super(new BorderLayout(0, 16));
         this.subject = subject;
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        add(statusLabel, BorderLayout.SOUTH);
+        setBackground(Theme.BG);
+        setBorder(BorderFactory.createEmptyBorder(20, 24, 12, 24));
+        statusLabel.setFont(Theme.font(12));
+        statusLabel.setForeground(Theme.DANGER_TEXT);
+        footer.setOpaque(false);
+        footer.add(statusLabel, BorderLayout.SOUTH);
+        add(footer, BorderLayout.SOUTH);
         subject.addListener(this);
+    }
+
+    /** Puts a component (e.g. an info banner) at the bottom of the page, above the status line. */
+    protected void setFooter(JComponent component) {
+        footer.add(component, BorderLayout.CENTER);
     }
 
     /** Called by the subject, possibly from a background thread, so hop onto the Swing thread first. */
@@ -59,6 +72,7 @@ public abstract class RefreshablePanel<T> extends JPanel implements Registration
     }
 
     /** Stop listening (called when the screen is closed, e.g. on logout). */
+    @Override
     public void detach() {
         subject.removeListener(this);
     }

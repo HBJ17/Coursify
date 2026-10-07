@@ -5,6 +5,7 @@ import com.crs.ui.PanelFactory;
 import com.crs.ui.ScreenNavigator;
 import com.crs.ui.Session;
 import java.awt.Component;
+import java.util.function.Consumer;
 
 /** Checks the login in the background, then opens the student or admin screen depending on the role. */
 public class LoginController extends BaseController {
@@ -19,10 +20,13 @@ public class LoginController extends BaseController {
         this.navigator = navigator;
     }
 
-    /** afterAttempt runs when the attempt finishes (success or failure), e.g. to re-enable the button. */
-    public void login(String id, String password, Runnable afterAttempt) {
+    /**
+     * afterAttempt runs when the attempt finishes (success or failure), e.g. to re-enable the button.
+     * showError receives the message to display inline under the form.
+     */
+    public void login(String id, String password, Runnable afterAttempt, Consumer<String> showError) {
         if (id.isBlank() || password.isEmpty()) {
-            showInfo("Please enter your ID and password.");
+            showError.accept("Please enter your ID and password.");
             afterAttempt.run();
             return;
         }
@@ -34,7 +38,7 @@ public class LoginController extends BaseController {
                 },
                 error -> {
                     afterAttempt.run();
-                    showError(error);
+                    showError.accept(error.getMessage() != null ? error.getMessage() : "Login failed");
                 });
     }
 }

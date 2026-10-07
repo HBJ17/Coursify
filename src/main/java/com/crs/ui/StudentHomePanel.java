@@ -1,21 +1,33 @@
 package com.crs.ui;
 
 import com.crs.app.AppContext;
+import com.crs.ui.theme.Chip;
+import com.crs.ui.theme.Icons;
 import java.awt.BorderLayout;
 import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
 
-/** The student area: header + three tabs (Browse, My Courses, My Waitlists). */
+/** The student area: sidebar shell with Browse Courses, My Courses and My Waitlists. */
 public class StudentHomePanel extends JPanel {
 
     public StudentHomePanel(AppContext ctx, Session session, ScreenNavigator navigator) {
         super(new BorderLayout());
-        JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("Browse Courses", new BrowseCoursesPanel(ctx, session));
-        tabs.addTab("My Courses", new MyCoursesPanel(ctx, session));
-        tabs.addTab("My Waitlists", new WaitlistPanel(ctx, session));
+        String studentId = session.getUserId();
 
-        add(new HeaderBar(session, navigator), BorderLayout.NORTH);
-        add(tabs, BorderLayout.CENTER);
+        AppShell shell = new AppShell(ctx, session, navigator);
+        shell.addSection("Academic");
+        shell.addPage("browse", "Browse Courses", Icons.Name.SEARCH,
+                "Browse Courses", "Search the catalogue and register for courses",
+                new BrowseCoursesPanel(ctx, session));
+        shell.addPage("courses", "My Courses", Icons.Name.BOOK,
+                "My Courses", "Your registered courses and weekly timetable",
+                new MyCoursesPanel(ctx, session));
+        shell.addPage("waitlists", "My Waitlists", Icons.Name.HOURGLASS,
+                "My Waitlists", "Courses you are queued for",
+                new WaitlistPanel(ctx, session));
+
+        shell.setCounter("courses", () -> ctx.getRegistrationService().getMyCourses(studentId).size(), Chip.Style.NEUTRAL);
+        shell.setCounter("waitlists", () -> ctx.getWaitlistService().getMyWaitlists(studentId).size(), Chip.Style.WARNING);
+
+        add(shell, BorderLayout.CENTER);
     }
 }

@@ -2,12 +2,9 @@ package com.crs.ui.theme;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.LayoutManager;
-import java.awt.geom.Area;
-import java.awt.geom.Rectangle2D;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 
@@ -56,24 +53,15 @@ public class Card extends JPanel {
         g2.dispose();
     }
 
-    /** After the children are painted: mask the corners with the parent colour, then draw the border. */
+    /** Children are clipped to the rounded shape, then the border is drawn on top. */
     @Override
     protected void paintChildren(Graphics g) {
-        super.paintChildren(g);
+        Graphics2D clipped = (Graphics2D) g.create();
+        clipped.clip(Draw.round(0, 0, getWidth(), getHeight(), radius));
+        super.paintChildren(clipped);
+        clipped.dispose();
         Graphics2D g2 = Draw.smooth(g);
-        Area outside = new Area(new Rectangle2D.Double(0, 0, getWidth(), getHeight()));
-        outside.subtract(new Area(Draw.round(0, 0, getWidth(), getHeight(), radius)));
-        g2.setColor(parentBackground());
-        g2.fill(outside);
         Draw.roundRect(g2, 0, 0, getWidth(), getHeight(), radius, null, stroke);
         g2.dispose();
-    }
-
-    private Color parentBackground() {
-        for (Container p = getParent(); p != null; p = p.getParent()) {
-            if (p instanceof Card card) return card.fill;
-            if (p.isOpaque()) return p.getBackground();
-        }
-        return Theme.BG;
     }
 }
