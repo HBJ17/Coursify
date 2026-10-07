@@ -9,6 +9,9 @@ import com.crs.observer.RegistrationSubject;
 import com.crs.service.WaitlistService;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.PriorityQueue;
 import java.util.Optional;
 
 /** STUB. Member 3 replaces the method bodies (keep the constructor signature). One PriorityQueue per course. */
@@ -19,6 +22,7 @@ public class WaitlistServiceImpl implements WaitlistService {
     private final RegistrationDAO registrationDAO;
     private final RegistrationSubject subject;
     private final Comparator<WaitlistEntry> priority;
+    private final Map<String, PriorityQueue<WaitlistEntry>> queues = new HashMap<>();
 
     public WaitlistServiceImpl(WaitlistDAO waitlistDAO, StudentDAO studentDAO, CourseDAO courseDAO,
                                RegistrationDAO registrationDAO, RegistrationSubject subject,
@@ -29,6 +33,11 @@ public class WaitlistServiceImpl implements WaitlistService {
         this.registrationDAO = registrationDAO;
         this.subject = subject;
         this.priority = priority;
+
+        for (WaitlistEntry entry : waitlistDAO.findAll()) {
+            queues.computeIfAbsent(entry.getCourseCode(), k -> new PriorityQueue<>(priority))
+                  .add(entry);
+        }
     }
 
     @Override public void join(String studentId, String courseCode) { throw new UnsupportedOperationException("TODO Member 3"); }
