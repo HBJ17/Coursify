@@ -3,6 +3,8 @@ package com.crs.ui;
 import com.crs.app.AppContext;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -34,12 +36,23 @@ public class MainFrame extends JFrame implements ScreenNavigator {
     /** Removes the old screen, builds the requested one and makes it visible. */
     @Override
     public void showScreen(String screenName) {
-        if (currentScreen != null) cardHolder.remove(currentScreen);
+        if (currentScreen != null) {
+            detachListeners(currentScreen); // old screen must stop listening for events
+            cardHolder.remove(currentScreen);
+        }
         currentScreen = factory.create(screenName);
         cardHolder.add(currentScreen, screenName);
         cards.show(cardHolder, screenName);
         cardHolder.revalidate();
         cardHolder.repaint();
+    }
+
+    /** Walks through every child component and unsubscribes the live panels. */
+    private static void detachListeners(Container container) {
+        for (Component child : container.getComponents()) {
+            if (child instanceof RefreshablePanel<?> panel) panel.detach();
+            if (child instanceof Container inner) detachListeners(inner);
+        }
     }
 
     public AppContext getContext() { return ctx; }

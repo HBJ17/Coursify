@@ -13,7 +13,7 @@ public class StudentHomePanel extends JPanel {
     public StudentHomePanel(AppContext ctx, Session session, ScreenNavigator navigator) {
         super(new BorderLayout());
         JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("Browse Courses", comingSoon("Browse Courses"));
+        tabs.addTab("Browse Courses", new BrowseCoursesPanel(ctx));
         tabs.addTab("My Courses", comingSoon("My Courses"));
         tabs.addTab("My Waitlists", comingSoon("My Waitlists"));
 
