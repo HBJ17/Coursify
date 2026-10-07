@@ -35,7 +35,7 @@ public class RegistrationSubjectImpl implements RegistrationSubject {
         Runnable notifyTask = () -> {
             for (RegistrationListener listener : listeners) {
                 try {
-                    listener.onRegistrationEvent(event);
+                    listener.onRegistrationChanged(event);
                 } catch (Exception e) {
                     System.err.println("Listener exception: " + e.getMessage());
                     e.printStackTrace(System.err);
