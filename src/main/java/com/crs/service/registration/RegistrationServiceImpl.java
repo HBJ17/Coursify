@@ -19,6 +19,7 @@ import com.crs.service.rules.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Implementation of RegistrationService (Member 2).
@@ -93,11 +94,14 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     @Override
     public List<Course> getMyCourses(String studentId) {
-        throw new UnsupportedOperationException("TODO Member 2");
+        return registrationDAO.findActiveByStudent(studentId).stream()
+                .map(r -> courseDAO.findByCode(r.getCourseCode()))
+                .flatMap(Optional::stream)
+                .toList();
     }
 
     @Override
     public List<Registration> getAllActiveRegistrations() {
-        throw new UnsupportedOperationException("TODO Member 2");
+        return registrationDAO.findAllActive();
     }
 }
