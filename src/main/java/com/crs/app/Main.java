@@ -1,8 +1,9 @@
 package com.crs.app;
 
 import com.crs.ui.MainFrame;
+import com.crs.ui.theme.MessageDialog;
 import com.crs.ui.theme.Theme;
-import javax.swing.JOptionPane;
+import java.util.List;
 import javax.swing.SwingUtilities;
 
 /**
@@ -21,8 +22,8 @@ public class Main {
             try {
                 new MainFrame(AppContext.createDefault()).setVisible(true);
             } catch (RuntimeException e) {
-                JOptionPane.showMessageDialog(null, "Could not start: " + e.getMessage(),
-                        "Coursify", JOptionPane.ERROR_MESSAGE);
+                MessageDialog.show(null, MessageDialog.Tone.DANGER, "Coursify could not start",
+                        String.valueOf(e.getMessage()), List.of());
                 System.exit(1);
             }
         });
